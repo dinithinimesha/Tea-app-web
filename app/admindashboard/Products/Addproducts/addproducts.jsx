@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation"; 
 
 export default function AddProducts() {
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ export default function AddProducts() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const router = useRouter();
 
   // Handle file upload
   const handleFileChange = async (e) => {
@@ -102,6 +104,7 @@ export default function AddProducts() {
       setImageUrl("");
     }
     setLoading(false);
+    router.push("/admindashboard/Products");
   };
 
   return (
@@ -161,8 +164,6 @@ export default function AddProducts() {
         </button>
       </div>
 
-      {/* Display success or error message */}
-      {message && <div className="mt-4 text-center text-red-500">{message}</div>}
     </form>
   );
 }

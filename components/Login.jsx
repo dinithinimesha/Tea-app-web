@@ -1,3 +1,4 @@
+// components/Login.jsx
 "use client";
 import { useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -35,7 +36,7 @@ export default function Auth() {
       if (userData?.role === 'admin') {
         router.push('/admindashboard');
       } else {
-        router.push('/dashboard');
+        router.push('/');
       }
 
     } catch (error) {
@@ -91,7 +92,7 @@ export default function Auth() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#77FF95] focus:outline-none focus:ring-2 focus:ring-offset-2"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-black bg-[#77FF95] focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                 {loading ? (

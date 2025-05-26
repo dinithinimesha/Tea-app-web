@@ -1,6 +1,6 @@
 import React from "react";
 
-const ProfileModel = ({ isOpen, onClose, profiledetails }) => {
+const ProfileModal = ({ isOpen, onClose, profiledetails }) => {
   if (!isOpen) return null;
 
   return (
@@ -34,4 +34,4 @@ const ProfileModel = ({ isOpen, onClose, profiledetails }) => {
   );
 };
 
-export default ProfileModel;
+export default ProfileModal;

@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { SquarePen, Trash2 } from "lucide-react";
 
-import Deletecanteens from '@/app/admindashboard/Products/Deleteproduct/deleteproduct';
-import DescriptionModel from '@/app/components/Productdetails';
-import ShippingAddressModel from '@/app/components/ShippingAddressModel';
+import DeleteOrderModal from '@/app/admindashboard/Products/Deleteproduct/deleteproduct';
+import DescriptionModal from '@/app/components/Productdetails';
+import ShippingAddressModal from '@/app/components/ShippingAddressModel';
 import UpdateStatusModal from "./Updatestatus/updatestatus";
-import ProfileModel from "@/app/components/ProfileModel";
+import ProfileModal from "@/app/components/ProfileModel";
 import { supabase } from "@/lib/supabase";
 
 const OrdersTable = () => {
@@ -15,7 +15,7 @@ const OrdersTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
-  const [selectedProfileDetails, setSelectedProfileDetails] = useState(null);
+  const [selectedProfile, setSelectedProfile] = useState(null);
   const [selectedShippingAddress, setSelectedShippingAddress] = useState(null);
   const [modals, setModals] = useState({
     delete: false,
@@ -31,8 +31,11 @@ const OrdersTable = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       const { data, error } = await supabase.from("orders").select("*");
-      if (error) console.error("Error fetching orders:", error);
-      else setOrders(data);
+      if (error) {
+        console.error("Error fetching orders:", error);
+      } else {
+        setOrders(data);
+      }
     };
     fetchOrders();
   }, []);
@@ -48,7 +51,7 @@ const OrdersTable = () => {
     } catch (err) {
       console.error('Unexpected error:', err);
     } finally {
-      setModals(prev => ({ ...prev, delete: false }));
+      closeModal('delete');
     }
   };
 
@@ -106,7 +109,7 @@ const OrdersTable = () => {
       setSelectedOrderDetails(data);
       openModal('description');
     } else {
-      console.error("Error fetching order:", error);
+      console.error("Error fetching order details:", error);
     }
   };
 
@@ -118,7 +121,7 @@ const OrdersTable = () => {
       .single();
 
     if (!error) {
-      setSelectedProfileDetails(data.profiles); // Access nested profile object
+      setSelectedProfile(data.profiles);
       openModal('profile');
     } else {
       console.error("Error fetching profile:", error);
@@ -136,7 +139,7 @@ const OrdersTable = () => {
       setSelectedShippingAddress(data);
       openModal('shipping');
     } else {
-      console.error("Error fetching address:", error);
+      console.error("Error fetching shipping address:", error);
     }
   };
 
@@ -189,10 +192,13 @@ const OrdersTable = () => {
                   <button onClick={() => handleStatusModal(order.id)}>
                     <SquarePen size={18} />
                   </button>
-                  <button onClick={() => {
-                    setSelectedOrderId(order.id);
-                    openModal('delete');
-                  }} className="text-red-500 hover:text-red-400">
+                  <button
+                    onClick={() => {
+                      setSelectedOrderId(order.id);
+                      openModal('delete');
+                    }}
+                    className="text-red-500 hover:text-red-400"
+                  >
                     <Trash2 size={18} />
                   </button>
                 </td>
@@ -203,23 +209,23 @@ const OrdersTable = () => {
       </div>
 
       {selectedOrderDetails?.order_products && (
-        <DescriptionModel
+        <DescriptionModal
           isOpen={modals.description}
           onClose={() => closeModal('description')}
           products={selectedOrderDetails.order_products}
         />
       )}
 
-      {selectedProfileDetails && (
-        <ProfileModel
+      {selectedProfile && (
+        <ProfileModal
           isOpen={modals.profile}
           onClose={() => closeModal('profile')}
-          profiledetails={selectedProfileDetails}
+          profiledetails={selectedProfile}
         />
       )}
 
-      {modals.shipping && (
-        <ShippingAddressModel
+      {modals.shipping && selectedShippingAddress && (
+        <ShippingAddressModal
           isOpen={modals.shipping}
           onClose={() => closeModal('shipping')}
           orders={selectedShippingAddress}
@@ -227,7 +233,7 @@ const OrdersTable = () => {
       )}
 
       {modals.delete && (
-        <Deletecanteens
+        <DeleteOrderModal
           isOpen={modals.delete}
           onClose={() => closeModal('delete')}
           onDelete={() => handleDelete(selectedOrderId)}

@@ -40,10 +40,12 @@ const Sidebar = () => {
   const isActive = (path) => pathname === path;
 
   return (
-    <div className="w-20 h-screen p-4 text-gray-300 bg-[#2B2623] md:w-60">
-      <Image src={Logo} alt="aroma" width={150} height={50}  />
-      <h1 className="mb-10 hidden md:block text-center text-2xl font-bold text-[#77FF95]">AROMA</h1>
-      <ul className="space-y-4">
+    <div className="w-20 h-screen p-4 text-gray-300 bg-[#2B2623] md:w-60 flex flex-col items-center">
+  <Image src={Logo} alt="aroma" width={100} height={50} />
+  <h1 className="mb-10 mt-2 hidden md:block text-center text-xl font-bold text-[#77FF95]">
+    AROMA
+  </h1>
+  <ul className="space-y-4 w-full">
         {links.map((link) => (
           <li key={link.href}>
             <Link

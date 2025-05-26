@@ -2,10 +2,12 @@
 import { useState, useEffect, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation"; 
 
 function UpdateProductContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
     product_name: "",
@@ -13,17 +15,16 @@ function UpdateProductContent() {
     price: "",
     description: "",
     company: "",
-    category: "Tea", // Default category set to "Tea"
+    category: "Tea",
     quantity: "",
     status: true,
   });
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (id) {
-      getDataById(id);
-    }
+    if (id) getDataById(id);
   }, [id]);
 
   async function getDataById(productId) {
@@ -39,9 +40,7 @@ function UpdateProductContent() {
       return;
     }
 
-    if (data) {
-      setFormData(data);
-    }
+    if (data) setFormData(data);
   }
 
   const handleInputChange = (e) => {
@@ -52,14 +51,27 @@ function UpdateProductContent() {
     });
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prevData) => ({ ...prevData, product_image: reader.result }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const fileName = `${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage.from("images").upload(fileName, file);
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError.message);
+      setMessage(`Image upload failed: ${uploadError.message}`);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from("images").getPublicUrl(fileName);
+    const imageUrl = publicUrlData?.publicUrl;
+
+    if (imageUrl) {
+      setFormData((prev) => ({
+        ...prev,
+        product_image: imageUrl,
+      }));
     }
   };
 
@@ -69,7 +81,11 @@ function UpdateProductContent() {
     setMessage("");
 
     const { error } = await supabase.from("products").upsert([
-      { ...formData, price: parseFloat(formData.price), quantity: parseInt(formData.quantity) },
+      {
+        ...formData,
+        price: parseFloat(formData.price),
+        quantity: parseInt(formData.quantity),
+      },
     ]);
 
     if (error) {
@@ -83,30 +99,33 @@ function UpdateProductContent() {
         price: "",
         description: "",
         company: "",
-        category: "Tea", // Reset category to default
+        category: "Tea",
         quantity: "",
         status: true,
       });
     }
+
     setLoading(false);
+    router.push("/admindashboard/Products");
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <InputField label="Product Name" name="product_name" value={formData.product_name} onChange={handleInputChange} />
+
         <div>
           <label className="block p-1 text-[#77FF95]">Image</label>
           <input
             type="file"
             onChange={handleFileChange}
             className="w-full p-2 text-gray-300 bg-[#3B3737] rounded-md focus:outline-none focus:ring-1 focus:ring-[#77FF95]"
-            required
           />
           {formData.product_image && (
-            <img src={formData.product_image} alt="Image preview" className="rounded-lg max-w-sm border shadow" />
+            <img src={formData.product_image} alt="Preview" className="rounded-lg max-w-sm border shadow mt-2" />
           )}
         </div>
+
         <InputField label="Price" name="price" type="number" value={formData.price} onChange={handleInputChange} />
         <div className="sm:col-span-2">
           <TextareaField label="Description" name="description" value={formData.description} onChange={handleInputChange} />

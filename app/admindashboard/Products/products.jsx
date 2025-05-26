@@ -9,6 +9,7 @@ import DescriptionModel from '@/app/components/DescriptionModel';
 
 // Constants
 const PRODUCTS_PER_PAGE = 9;
+const TABLE_HEADERS = ['Id', 'Name', 'Price', 'Company', 'Description', 'Category', 'Quantity', 'Status', 'Action'];
 
 // Pagination Component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => (
@@ -31,39 +32,84 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => (
   </div>
 );
 
+// Product Row Component
+const ProductRow = ({ product, onDeleteClick, onDescriptionClick }) => (
+  <tr className="border-b border-gray-700">
+    <td className="px-4 py-2">{product.id}</td>
+    <td className="px-4 py-2">{product.product_name}</td>
+    <td className="px-4 py-2">{product.price}</td>
+    <td className="px-4 py-2">{product.company}</td>
+    <td className="px-4 py-2">
+      <button
+        onClick={() => onDescriptionClick(product)}
+        className="text-orange-400 hover:underline"
+      >
+        View
+      </button>
+    </td>
+    <td className="px-4 py-2">{product.category}</td>
+    <td className="px-4 py-2">{product.quantity}</td>
+    <td className="px-4 py-2">
+      <span className={product.status ? 'text-green-500' : 'text-red-500'}>
+        {product.status ? 'Available' : 'Not Available'}
+      </span>
+    </td>
+    <td className="px-4 py-2 flex gap-2">
+      <Link href={`/admindashboard/Products/Updateproduct?id=${product.id}`} className="ml-2">
+        <SquarePen size={18} />
+      </Link>
+      <button
+        onClick={() => onDeleteClick(product.id)}
+        className="text-red-500 hover:text-red-400"
+      >
+        <Trash2 size={18} />
+      </button>
+    </td>
+  </tr>
+);
+
 // Main Component
 const ProductsTable = () => {
-  // State
+  // State management
   const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
   const [selectedProductDetails, setSelectedProductDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Fetch products on mount
   useEffect(() => {
     const fetchProducts = async () => {
       try {
+        setIsLoading(true);
         const { data, error } = await supabase.from('products').select('*');
+        
         if (error) throw error;
         setProducts(data || []);
       } catch (err) {
         console.error('Error fetching products:', err.message);
+        setError('Failed to load products');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchProducts();
   }, []);
 
-  // Delete product
+  // Delete product handler
   const handleDelete = async (id) => {
     try {
       const { error } = await supabase.from('products').delete().eq('id', id);
       if (error) throw error;
+      
       setProducts(prev => prev.filter(product => product.id !== id));
     } catch (err) {
       console.error('Error deleting product:', err.message);
+      setError('Failed to delete product');
     } finally {
       setIsDeleteOpen(false);
     }
@@ -84,14 +130,13 @@ const ProductsTable = () => {
   const indexOfLast = currentPage * PRODUCTS_PER_PAGE;
   const indexOfFirst = indexOfLast - PRODUCTS_PER_PAGE;
   const currentProducts = products.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil(products.length / PRODUCTS_PER_PAGE));
 
-  // Table headers
-  const headers = ['Id', 'Name', 'Price', 'Company', 'Description', 'Category', 'Quantity', 'Status', 'Action'];
+  if (isLoading) return <div className="text-center py-8">Loading products...</div>;
+  if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
 
   return (
     <div className="rounded-md shadow-lg">
-      
       {/* Add Products Button */}
       <div className="mb-4 flex justify-end">
         <Link
@@ -108,59 +153,43 @@ const ProductsTable = () => {
         <table className="w-full text-sm text-left text-gray-400 bg-[#2B2623] rounded-xl">
           <thead className="text-gray-900 bg-[#77FF95]">
             <tr>
-              {headers.map(header => (
+              {TABLE_HEADERS.map(header => (
                 <th key={header} className="px-4 py-2">{header}</th>
               ))}
             </tr>
           </thead>
 
           <tbody>
-            {currentProducts.map(product => (
-              <tr key={product.id} className="border-b border-gray-700">
-                <td className="px-4 py-2">{product.id}</td>
-                <td className="px-4 py-2">{product.product_name}</td>
-                <td className="px-4 py-2">{product.price}</td>
-                <td className="px-4 py-2">{product.company}</td>
-                <td className="px-4 py-2">
-                  <button
-                    onClick={() => handleDescriptionClick(product)}
-                    className="text-orange-400 hover:underline"
-                  >
-                    View
-                  </button>
-                </td>
-                <td className="px-4 py-2">{product.category}</td>
-                <td className="px-4 py-2">{product.quantity}</td>
-                <td className="px-4 py-2">
-                  <span className={product.status ? 'text-green-500' : 'text-red-500'}>
-                    {product.status ? 'Available' : 'Not Available'}
-                  </span>
-                </td>
-                <td className="px-4 py-2 flex gap-2">
-                  <Link href={`/admindashboard/Products/Updateproduct?id=${product.id}`} className="ml-2">
-                    <SquarePen size={18} />
-                  </Link>
-                  <button
-                    onClick={() => handleDeleteClick(product.id)}
-                    className="text-red-500 hover:text-red-400"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+            {currentProducts.length > 0 ? (
+              currentProducts.map(product => (
+                <ProductRow
+                  key={product.id}
+                  product={product}
+                  onDeleteClick={handleDeleteClick}
+                  onDescriptionClick={handleDescriptionClick}
+                />
+              ))
+            ) : (
+              <tr>
+                <td colSpan={TABLE_HEADERS.length} className="px-4 py-8 text-center">
+                  No products available
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      {products.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
-      {/* Description Modal */}
+      {/* Modals */}
       {selectedProductDetails && (
         <DescriptionModel
           isOpen={isDescriptionOpen}
@@ -171,7 +200,6 @@ const ProductsTable = () => {
         />
       )}
 
-      {/* Delete Modal */}
       {isDeleteOpen && (
         <DeleteProduct
           isOpen={isDeleteOpen}
